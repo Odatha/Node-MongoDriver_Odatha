@@ -1,6 +1,7 @@
 //node app interact with mongodb server
 const MongoClient = require("mongodb").MongoClient;
 const assert = require("assert");
+const dboper = require("./operations");
 
 const url = "mongodb://localhost:27017/"; //url to access mongo server
 const dbname = "conFusion";
@@ -11,31 +12,39 @@ MongoClient.connect(url, (err, client) => {
   assert.equal(err, null); //whether error is equal to null
   console.log("Connected correctly to server");
   const db = client.db(dbname); //connect to db
-  const collection = db.collection("dishes");
 
-  collection.insertOne(
-    { name: "Pizza", description: "test" },
-    (err, result) => {
-      assert.equal(err, null);
+  dboper.insertDocument(
+    db,
+    { name: "Doughnut", description: "Test" },
+    "dishes",
+    (result) => {
+      console.log("Insert Document:\n", result.ops); //no of operation
 
-      console.log("After insert:\n");
-      console.log(result.ops); //no of operation succeed
+      dboper.findDocuments(db, "dishes", (docs) => {
+        console.log("Found documents:\n", docs);
 
-      collection.find({}).toArray((err, docs) => {
-        assert.equal(err, null);
+        dboper.updateDocument(
+          db,
+          { name: "Doughnut" },
+          { description: "Updated Test" },
+          "dishes",
+          (result) => {
+            console.log("Updated Document:\n", result.result);
 
-        console.log("Found:\n");
-        console.log(docs);
+            dboper.findDocuments(db, "dishes", (docs) => {
+              console.log("Found documents:\n", docs);
 
-        db.dropCollection("dishes", (err, result) => {
-          // to cleanup the db, remove collection dishes
-          assert.equal(err, null);
+              db.dropCollection("dishes", (result) => {
+                console.log("Dropped Collection: ", result);
 
-          client.close(); //close the connection to the database
-        });
+                client.close();
+              });
+            });
+          }
+        );
       });
     }
-  ); //document first arg, callback func 2nd arg
+  );
 });
 
 //nesting of calls one inside the other, stcructure of callback functions
